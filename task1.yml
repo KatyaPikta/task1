@@ -1,0 +1,21 @@
+- name: Deploy application server
+  hosts: all
+  become: yes
+  vars:
+    app_name: "flask-auth-example"
+    app_port: 5000
+    nginx_server_name: "test.local"
+    app_repo_url: "https://github.com/riad-azz/flask-auth-example"
+    
+  roles:
+    - role: task1-role
+      tags: task1-role
+
+  tasks:
+    - name: Display deployment summary
+      debug:
+        msg: |
+          Application deployed successfully!
+          App URL: http://{{ nginx_server_name }}
+          App directory: {{ app_directory }}
+          Metrics logs: {{ log_dir }}

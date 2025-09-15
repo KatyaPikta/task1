@@ -1,0 +1,19 @@
+# Ansible managed - Do not edit manually
+
+# Application flask-auth
+if $programname == '{{ app_name }}' then {
+    action(type="omfile" file="{{ log_dir }}/flask-auth.log")
+    stop
+}
+
+# syslog identifier
+if $syslogtag contains 'flask-auth-example' then {
+    action(type="omfile" file="{{ log_dir }}/flask-auth.log")
+    & stop
+}
+
+# Log error file
+if $programname == '{{ app_name }}' and $syslogseverity <= 4 then {
+    action(type="omfile" file="{{ log_dir }}/flask-auth-error.log")
+    stop
+}

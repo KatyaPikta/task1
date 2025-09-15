@@ -1,0 +1,38 @@
+# defaults file for task1-role
+
+# Application settings
+app_name: "flask-auth-example"
+app_user: "www-data"
+app_group: "www-data"
+app_port: 5000
+app_directory: "/var/www/{{ app_name }}"
+app_repo_url: "https://github.com/KatyaPikta/task1"
+app_branch: "main"
+
+# Nginx settings
+nginx_server_name: "test.local"
+nginx_access_log: "/var/log/flask-auth/test.local.access.log"
+nginx_error_log: "/var/log/flask-auth/test.local.error.log"
+
+# Monitoring settings
+log_dir: "/var/log/flask-auth"
+metrics_retention_days: 30
+metrics_collection_interval: 5
+
+# Python settings
+python_venv_path: "{{ app_directory }}/venv"
+
+#cron settings
+cron_check_services_minute: "*/10"
+cron_backup_minute: "0"
+cron_backup_hour: "2"
+script_directory: "/opt/scripts"
+cron_backup_scripts: "backup_db.sh"
+cron_check_services_scripts: "check_services.sh"
+cron_user: "root"
+cron_state: present
+
+#rsyslog
+log_user: "root"
+log_group: "root"
+log_mode: "0755"

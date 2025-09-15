@@ -1,0 +1,26 @@
+[Unit]
+Description={{ app_name }} Application
+After=network.target
+
+[Service]
+Type=simple
+User={{ app_user }}
+Group={{ app_group }}
+WorkingDirectory={{ app_directory }}
+Environment=PATH={{ python_venv_path }}/bin:$PATH
+Environment=FLASK_ENV=development
+
+ExecStart=/usr/bin/python3 main.py
+
+
+Restart=always
+RestartSec=5
+SyslogIdentifier={{ app_name }}
+LogLevelMax=info
+StandardOutput=journal
+StandardError=journal
+LogExtraFields=SYSLOG_IDENTIFIER=flask-auth
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target

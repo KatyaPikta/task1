@@ -1,0 +1,217 @@
+# tasks file for task1-role
+
+- name: Install required packages
+  apt:
+    name: "{{ required_packages }}"
+    state: present
+    update_cache: yes
+  tags: packages
+
+- name: Create application directory
+  file:
+    path: "{{ app_directory }}"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: '0755'
+  tags: app
+
+- name: Add safe directories to Git configuration
+  ansible.builtin.command:
+    cmd: "git config --global --add safe.directory {{ app_directory }}"
+  become_user: devops
+  args:
+    warn: false
+  register: git_config
+  changed_when: git_config.rc == 0
+
+- name: Clone application repository
+  git:
+    repo: "{{ app_repo_url }}"
+    dest: "{{ app_directory }}"
+    version: "master"
+    force: yes
+    update: yes
+  tags: app
+
+- name: Create Python virtual environment
+  command:
+    cmd: "python3 -m venv {{ python_venv_path }}"
+    chdir: "{{ app_directory }}"
+  tags: python
+
+- name: Install Python dependencies
+  pip:
+    requirements: "{{ app_directory }}/requirements.txt"
+    virtualenv: "{{ python_venv_path }}"
+    virtualenv_command: python3 -m venv
+  tags: python
+
+- name: Install additional Python packages
+  pip:
+    name: "{{ python_packages }}"
+    virtualenv: "{{ python_venv_path }}"
+  tags: python
+
+- name: Create log directory
+  file:
+    path: "{{ log_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  tags: monitoring
+
+- name: Create systemd service for application
+  template:
+    src: "flask-auth.service.j2"
+    dest: "/etc/systemd/system/{{ app_name }}.service"
+    owner: root
+    group: root
+    mode: '0644'
+  notify:
+    - reload systemd
+    - restart flask-auth-example service
+  tags: systemd
+
+- name: Configure Nginx
+  template:
+    src: "nginx-app.conf.j2"
+    dest: "/etc/nginx/sites-available/{{ app_name }}"
+    owner: root
+    group: root
+    mode: '0644'
+  notify:
+    - restart nginx
+  tags: nginx
+
+- name: Enable Nginx site
+  file:
+    src: "/etc/nginx/sites-available/{{ app_name }}"
+    dest: "/etc/nginx/sites-enabled/{{ app_name }}"
+    state: link
+  notify:
+    - restart nginx
+  tags: nginx
+
+- name: Ensure script directory exists
+  file:
+    path: "{{ script_directory }}"
+    state: directory
+    mode: '0755'
+
+- name: Deploy backup script
+  copy:
+    src: "{{ cron_backup_scripts }}"
+    dest: "{{ script_directory }}/{{ cron_backup_scripts }}"
+    owner: root
+    group: root
+    mode: "0755"
+  tags: backup
+
+- name: Add cron job for backup
+  cron:
+    name: "Daily backup task"
+    minute: "{{ cron_backup_minute }}"
+    hour: "{{ cron_backup_hour }}"
+    job: "{{ script_directory }}/{{ cron_backup_scripts }}"
+    user: "{{ cron_user }}"
+    state: "{{ cron_state }}"
+
+- name: Deploy check services script
+  copy:
+    src: "{{ cron_check_services_scripts }}"
+    dest: "{{ script_directory }}/{{ cron_check_services_scripts }}"
+    owner: root
+    group: root
+    mode: "0755"
+  tags: backup
+
+- name: Add cron job for checking services
+  cron:
+    name: "Check services every 10 minutes"
+    minute: "{{ cron_check_services_minute }}"
+    job: "{{ script_directory }}/{{ cron_check_services_scripts }}"
+    user: "{{ cron_user }}"
+    state: "{{ cron_state }}"
+
+
+- name: Deploy system metrics script
+  copy:
+    src: "collect-metrics.sh"
+    dest: "{{ script_directory }}/collect-metrics.sh"
+    owner: root
+    group: root
+    mode: '0755'
+  tags: monitoring
+
+- name: Add cron job for system metrics
+  cron:
+    name: "Collect system metrics every 15 minutes"
+    minute: "*/15"
+    job: "{{ script_directory }}/collect-metrics.sh"
+    user: "{{ cron_user }}"
+    state: "{{ cron_state }}"
+
+- name: Deploy rsyslog-configuration
+  template:
+    src: 10-flask-auth.conf.j2
+    dest: /etc/rsyslog.d/10-flask-auth.conf
+    mode: '0644'
+  notify: restart rsyslog
+
+- name: Create log files with proper permissions
+  file:
+    path: "{{ item }}"
+    state: touch
+    mode: '0644'
+    owner: "{{ log_user }}"
+    group: "{{ log_group }}"
+  loop:
+    - "{{ log_dir }}/flask-auth.log"
+    - "{{ log_dir }}/flask-auth-error.log"
+
+- name: Configure logrotate for metrics
+  template:
+    src: "flask-auth.j2"
+    dest: "/etc/logrotate.d/flask-auth"
+    owner: root
+    group: root
+    mode: '0644'
+  tags: monitoring
+
+- name: Set default UFW policies
+  command:
+    cmd: "ufw default {{ item.policy }} {{ item.direction }}"
+  loop:
+    - { direction: "incoming", policy: "deny" }
+    - { direction: "outgoing", policy: "allow" }
+    - { direction: "forward", policy: "deny" }
+
+
+- name: Allow SSH connections
+  ufw:
+    rule: allow
+    port: "22"
+    proto: tcp
+    comment: "SSH access" 
+  tags: firewall
+
+- name: Allow HTTP connections
+  ufw:
+    rule: allow
+    port: "80"
+    proto: tcp
+    comment: "HTTP access"
+  tags: firewall
+
+- name: Ensure UFW is enabled
+  ufw:
+    state: enabled
+  tags: firewall
+
+- name: Add local hosts entry
+  lineinfile:
+    path: /etc/hosts
+    line: "127.0.0.1 {{ nginx_server_name }}"
+    state: present
