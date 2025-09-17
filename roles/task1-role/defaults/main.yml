@@ -1,5 +1,7 @@
 # defaults file for task1-role
 
+deployment_mode: "traditional"
+
 # Application settings
 app_name: "flask-auth-example"
 app_user: "www-data"
@@ -36,3 +38,21 @@ cron_state: present
 log_user: "root"
 log_group: "root"
 log_mode: "0755"
+
+#Docker settings
+docker_compose_version: "3.8"
+docker_network: "test_network"
+docker_app_image: "{{ app_name }}-app:latest"
+docker_nginx_image: "nginx:alpine"
+docker_nginx_name: "nginx-cont"
+
+docker_volumes:
+  nginx_logs: "/var/log/nginx"
+  nginx_config: "/opt/{{ app_name }}/nginx/nginx.conf"
+
+
+docker_ports:
+  nginx_host: 80
+  nginx_container: 80
+  app_host: 5000
+  app_container: 5000

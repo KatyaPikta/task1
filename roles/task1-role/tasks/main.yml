@@ -74,25 +74,19 @@
     - restart flask-auth-example service
   tags: systemd
 
-- name: Configure Nginx
-  template:
-    src: "nginx-app.conf.j2"
-    dest: "/etc/nginx/sites-available/{{ app_name }}"
-    owner: root
-    group: root
-    mode: '0644'
-  notify:
-    - restart nginx
-  tags: nginx
+- name: Include traditional deployment tasks
+  include_tasks: traditional.yml
+  when: deployment_mode == 'traditional'
+  tags:
+    - traditional
+    - deployment
 
-- name: Enable Nginx site
-  file:
-    src: "/etc/nginx/sites-available/{{ app_name }}"
-    dest: "/etc/nginx/sites-enabled/{{ app_name }}"
-    state: link
-  notify:
-    - restart nginx
-  tags: nginx
+- name: Include docker deployment tasks
+  include_tasks: docker.yml
+  when: deployment_mode == 'docker'
+  tags:
+    - docker
+    - deployment
 
 - name: Ensure script directory exists
   file:

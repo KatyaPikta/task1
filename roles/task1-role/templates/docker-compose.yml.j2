@@ -1,0 +1,15 @@
+
+version: '3.8'
+
+services:
+  nginx-proxy:
+    image: {{ docker_nginx_image }}
+    container_name: {{ docker_nginx_name }}
+    network_mode: "host"  
+    volumes:
+      - {{ docker_volumes.nginx_config }}:/etc/nginx/nginx.conf
+      - {{ app_directory }}/static:/usr/share/nginx/html/static
+      - {{ docker_volumes.nginx_logs }}:/var/log/nginx
+
+    restart: unless-stopped
+

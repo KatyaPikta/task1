@@ -1,0 +1,90 @@
+# Docker installation
+
+- name: Install Docker packages
+  apt:
+    name: "{{ docker_packages }}"
+    state: present
+    update_cache: yes
+  tags: docker
+
+- name: Ensure Docker daemon is running
+  systemd:
+    name: docker
+    state: started
+    enabled: yes
+  tags:
+    - hybrid
+    - docker
+
+- name: Add user to docker group
+  user:
+    name: "{{ app_user }}"
+    groups: docker
+    append: yes
+  tags: docker
+
+- name: Create Docker directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: '0755'
+  loop:
+    - "{{ docker_nginx_directory }}"
+    - "{{ docker_nginx_directory }}/logs "
+  tags: docker
+
+- name: Deploy docker-compose.yml
+  template:
+    src: "docker-compose.yml.j2"
+    dest: "{{ docker_compose_path }}"
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: '0644'
+  tags: docker
+
+- name: Deploy Nginx configuration for Docker
+  template:
+    src: "nginx-docker.conf.j2"
+    dest: "{{ docker_nginx_directory }}/nginx.conf"
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: '0644'
+  tags: docker
+
+
+- name: Cleanup existing containers and networks
+  block:
+    - name: Remove any existing nginx containers
+      community.docker.docker_container:
+        name: "{{ docker_nginx_name }}"
+        state: absent
+        force_kill: yes
+      ignore_errors: yes
+
+    - name: Remove old networks
+      community.docker.docker_network:
+        name: "{{ docker_network }}"
+        state: absent
+      ignore_errors: yes
+  tags:
+    - hybrid
+    - cleanup
+
+- name: Build Docker images
+  community.docker.docker_compose:
+    project_src: "/opt/{{ app_name }}"
+    build: yes
+    files:
+      - "{{ docker_compose_path }}"
+  tags: docker
+
+- name: Start Docker containers
+  community.docker.docker_compose:
+    project_src: "/opt/{{ app_name }}"
+    state: present
+    files:
+      - "{{docker_compose_path}}"
+    pull: yes
+  tags: docker
