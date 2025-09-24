@@ -15,7 +15,7 @@
 - плэйбук работает только на ubuntu серверах
 
 ## Структура роли
-
+```bash
 roles/
 └── task1_role/
     ├── defaults/
@@ -41,6 +41,7 @@ roles/
     │   └── nginx-docker.conf.j2
     └── vars/
        └── main.yml
+```
 
 ## Использование плэйбука
 
