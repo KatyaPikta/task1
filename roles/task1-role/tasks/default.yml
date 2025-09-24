@@ -1,8 +1,51 @@
+- name: Check if Python environment exists
+  stat:
+    path: "{{ python_venv_path }}/bin/activate"
+  register: venv_ex
+
+- name: Create Python virtual environment
+  command:
+    cmd: "python3 -m venv {{ python_venv_path }}"
+    chdir: "{{ app_directory }}"
+  when: not venv_ex.stat.exists
+  tags: python
+
+- name: Install Python dependencies
+  pip:
+    requirements: "{{ app_directory }}/requirements.txt"
+    virtualenv: "{{ python_venv_path }}"
+    virtualenv_command: python3 -m venv
+  tags: python
+
+- name: Install additional Python packages
+  pip:
+    name: "{{ python_packages }}"
+    virtualenv: "{{ python_venv_path }}"
+  tags: python
+
+- name: Create systemd service for application
+  template:
+    src: "flask-auth.service.j2"
+    dest: "/etc/systemd/system/{{ app_name }}.service"
+    owner: root
+    group: root
+    mode: '0644'
+  notify:
+    - reload systemd
+    - restart "{{ app_name }}"
+  tags: systemd
+
+- name: Ensure flask-auth-example is started
+  service:
+    name: "{{ app_name }}"
+    state: started
+    enabled: yes
+
 - name: Install Nginx for default deployment
   apt:
     name: nginx
     state: present
-  tags: 
+  tags:
     - default
     - nginx
 

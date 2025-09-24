@@ -1,15 +1,29 @@
-
 version: '3.8'
 
 services:
+  app:
+    build: .
+    container_name: {{ docker_app_name }}
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    networks:
+      - app-network
+
+
   nginx-proxy:
     image: {{ docker_nginx_image }}
     container_name: {{ docker_nginx_name }}
-    network_mode: "host"  
+    restart: unless-stopped
+    ports:
+      - "80:80"
     volumes:
       - {{ docker_volumes.nginx_config }}:/etc/nginx/nginx.conf
       - {{ app_directory }}/static:/usr/share/nginx/html/static
       - {{ docker_volumes.nginx_logs }}:/var/log/nginx
-
-    restart: unless-stopped
-
+    depends_on:
+      - app
+    
+networks:
+  app-network:
+    driver: bridge

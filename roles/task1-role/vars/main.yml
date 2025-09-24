@@ -23,6 +23,6 @@ docker_packages:
   - docker-compose
   - python3-docker
 
-docker_compose_path: "/opt/{{ app_name }}/docker-compose.yml"
-docker_nginx_directory: "/opt/{{ app_name }}/nginx"
+docker_compose_path: "{{ app_directory }}/docker-compose.yml"
+docker_nginx_directory: "{{ app_directory }}/nginx"
 

@@ -6,6 +6,13 @@
     state: stopped
   tags: docker
 
+- name: Ensure flask-auth-service is not running
+  systemd:
+    name:  "{{ app_name }}"
+    state: stopped
+  tags: docker
+
+
 - name: Install Docker packages
   apt:
     name: "{{ docker_packages }}"
@@ -39,9 +46,18 @@
     - "{{ docker_nginx_directory }}/logs "
   tags: docker
 
+- name: Deploy Dockerfile for flask-auth-example
+  copy:
+    src: "Dockerfile"
+    dest: "{{ app_directory }}"
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: '0644'
+  tags: docker
+
 - name: Deploy docker-compose.yml
-  template:
-    src: "docker-compose.yml.j2"
+  copy:
+    src: "docker-compose.yml"
     dest: "{{ docker_compose_path }}"
     owner: "{{ app_user }}"
     group: "{{ app_group }}"
@@ -62,9 +78,12 @@
   block:
     - name: Remove any existing nginx containers
       community.docker.docker_container:
-        name: "{{ docker_nginx_name }}"
+        name: "{{ item }}"
         state: absent
         force_kill: yes
+      loop:
+        - "{{docker_nginx_name}}"
+        - "{{docker_app_name}}"
       ignore_errors: yes
 
     - name: Remove old networks
@@ -76,7 +95,7 @@
 
 - name: Build Docker images
   community.docker.docker_compose:
-    project_src: "/opt/{{ app_name }}"
+    project_src: "{{ app_directory }}"
     build: yes
     files:
       - "{{ docker_compose_path }}"
@@ -84,7 +103,7 @@
 
 - name: Start Docker containers
   community.docker.docker_compose:
-    project_src: "/opt/{{ app_name }}"
+    project_src: "{{ app_directory }}"
     state: present
     files:
       - "{{docker_compose_path}}"

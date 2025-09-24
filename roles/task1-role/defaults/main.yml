@@ -46,11 +46,12 @@ docker_compose_version: "3.8"
 docker_network: "test_network"
 docker_app_image: "{{ app_name }}-app:latest"
 docker_nginx_image: "nginx:alpine"
-docker_nginx_name: "nginx-cont"
+docker_nginx_name: "nginx-proxy"
+docker_app_name: "flask-auth-example"
 
 docker_volumes:
   nginx_logs: "/var/log/nginx"
-  nginx_config: "/opt/{{ app_name }}/nginx/nginx.conf"
+  nginx_config: "{{ app_directory }}/nginx/nginx.conf"
 
 
 docker_ports:

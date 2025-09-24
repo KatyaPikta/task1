@@ -14,7 +14,7 @@
   systemd:
     daemon_reload: yes
 
-- name: restart flask-auth-example service
+- name: restart flask-auth-example
   service:
     name: "{{ app_name }}"
     state: restarted
