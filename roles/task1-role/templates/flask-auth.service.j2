@@ -10,7 +10,7 @@ WorkingDirectory={{ app_directory }}
 Environment=PATH={{ python_venv_path }}/bin:$PATH
 Environment=FLASK_ENV=development
 
-ExecStart=/usr/bin/python3 main.py
+ExecStart={{ python_venv_path }}/bin/python3 main.py
 
 
 Restart=always
@@ -19,7 +19,7 @@ SyslogIdentifier={{ app_name }}
 LogLevelMax=info
 StandardOutput=journal
 StandardError=journal
-LogExtraFields=SYSLOG_IDENTIFIER=flask-auth
+LogExtraFields=SYSLOG_IDENTIFIER={{ app_name }}
 Environment=PYTHONUNBUFFERED=1
 
 [Install]

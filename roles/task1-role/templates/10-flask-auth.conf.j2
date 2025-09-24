@@ -7,7 +7,7 @@ if $programname == '{{ app_name }}' then {
 }
 
 # syslog identifier
-if $syslogtag contains 'flask-auth-example' then {
+if $syslogtag contains '{{ app_name }}' then {
     action(type="omfile" file="{{ log_dir }}/flask-auth.log")
     & stop
 }

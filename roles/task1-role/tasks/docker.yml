@@ -1,5 +1,11 @@
 # Docker installation
 
+- name: Ensure nginx service is not running
+  systemd:
+    name: nginx
+    state: stopped
+  tags: docker
+
 - name: Install Docker packages
   apt:
     name: "{{ docker_packages }}"
@@ -12,9 +18,7 @@
     name: docker
     state: started
     enabled: yes
-  tags:
-    - hybrid
-    - docker
+  tags: docker
 
 - name: Add user to docker group
   user:
@@ -68,9 +72,7 @@
         name: "{{ docker_network }}"
         state: absent
       ignore_errors: yes
-  tags:
-    - hybrid
-    - cleanup
+  tags: docker
 
 - name: Build Docker images
   community.docker.docker_compose:

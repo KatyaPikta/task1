@@ -7,37 +7,61 @@
     update_cache: yes
   tags: packages
 
-- name: Create application directory
+- name: Check if application directory exist
+  stat:
+    path: "{{ app_directory }}/main.py"
+  register: app_dir_exist
+
+- name: Create application directory first time
   file:
     path: "{{ app_directory }}"
     state: directory
-    owner: "{{ app_user }}"
-    group: "{{ app_group }}"
+    owner: "{{ ansible_user }}"
+    group: root
     mode: '0755'
+  when: not app_dir_exist.stat.exists
   tags: app
 
 - name: Add safe directories to Git configuration
   ansible.builtin.command:
     cmd: "git config --global --add safe.directory {{ app_directory }}"
-  become_user: devops
+  become_user: "{{ ansible_user }}"
   args:
     warn: false
   register: git_config
   changed_when: git_config.rc == 0
 
 - name: Clone application repository
+  become: yes
+  become_user: "{{ ansible_user }}"
   git:
     repo: "{{ app_repo_url }}"
     dest: "{{ app_directory }}"
     version: "master"
-    force: yes
+    clone: yes
     update: yes
+    force: yes
+  when: not app_dir_exist.stat.exists
   tags: app
+
+- name: Change owner and group recursively
+  file:
+    path: "{{ app_directory }}"
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    recurse: yes
+    state: directory
+
+- name: Check if Python environment exists
+  stat:
+    path: "{{ python_venv_path }}/bin/activate"
+  register: venv_ex
 
 - name: Create Python virtual environment
   command:
     cmd: "python3 -m venv {{ python_venv_path }}"
     chdir: "{{ app_directory }}"
+  when: not venv_ex.stat.exists
   tags: python
 
 - name: Install Python dependencies
@@ -74,11 +98,11 @@
     - restart flask-auth-example service
   tags: systemd
 
-- name: Include traditional deployment tasks
-  include_tasks: traditional.yml
-  when: deployment_mode == 'traditional'
+- name: Include default deployment tasks
+  include_tasks: default.yml
+  when: deployment_mode == 'default'
   tags:
-    - traditional
+    - default
     - deployment
 
 - name: Include docker deployment tasks

@@ -1,6 +1,6 @@
 # defaults file for task1-role
 
-deployment_mode: "traditional"
+deployment_mode: "default"
 
 # Application settings
 app_name: "flask-auth-example"
@@ -8,18 +8,20 @@ app_user: "www-data"
 app_group: "www-data"
 app_port: 5000
 app_directory: "/var/www/{{ app_name }}"
-app_repo_url: "https://github.com/KatyaPikta/task1"
-app_branch: "main"
+app_repo_url: "(https://github.com/riad-azz/flask-auth-example"
+my_repo_url: "https://github.com/KatyaPikta/task1"
+app_branch: "master"
 
-# Nginx settings
-nginx_server_name: "test.local"
-nginx_access_log: "/var/log/flask-auth/test.local.access.log"
-nginx_error_log: "/var/log/flask-auth/test.local.error.log"
 
 # Monitoring settings
 log_dir: "/var/log/flask-auth"
 metrics_retention_days: 30
 metrics_collection_interval: 5
+
+# Nginx settings
+nginx_server_name: "test.local"
+nginx_access_log: "{{ log_dir }}{{ nginx_server_name }}.access.log"
+nginx_error_log: "{{ log_dir }}{{nginx_server_name}}.error.log"
 
 # Python settings
 python_venv_path: "{{ app_directory }}/venv"

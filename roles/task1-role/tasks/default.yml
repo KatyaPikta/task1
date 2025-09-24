@@ -1,9 +1,9 @@
-- name: Install Nginx for traditional deployment
+- name: Install Nginx for default deployment
   apt:
     name: nginx
     state: present
   tags: 
-    - traditional
+    - default
     - nginx
 
 - name: Configure Nginx
